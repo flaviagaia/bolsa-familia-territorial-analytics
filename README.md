@@ -12,6 +12,21 @@ Este projeto serve para reproduzir um tipo de análise comum em políticas públ
 - comparar municípios em termos de famílias beneficiárias e benefício médio;
 - identificar variações territoriais relevantes;
 - simular uma visão operacional de `pagamento disponibilizado` vs `saque estimado`, destacando possíveis gaps que mereceriam monitoramento.
+- prever repasses futuros com um modelo supervisionado;
+- segmentar municípios por perfil socioeconômico e operacional;
+- detectar anomalias em comportamento de pagamento vs saque.
+
+## Nome mais adequado para o repositório
+
+Se você quiser renomear o projeto depois no GitHub, os nomes que fazem mais sentido agora são:
+
+- `bolsa-familia-territorial-analytics`
+- `bolsa-familia-social-analytics`
+- `bolsa-familia-monitoring-and-ml`
+
+Minha recomendação principal:
+
+- `bolsa-familia-territorial-analytics`
 
 ## Fonte de dados
 
@@ -46,6 +61,8 @@ A parte de `pagamento vs saque` é uma **camada operacional sintética**, calibr
   Para pivot, janelas analíticas e cálculo de crescimento percentual.
 - `Pandas`
   Para consumo leve no dashboard.
+- `scikit-learn`
+  Para regressão, clustering e detecção de anomalias.
 - `Streamlit`
   Para o painel interativo.
 - `Plotly`
@@ -67,12 +84,82 @@ A parte de `pagamento vs saque` é uma **camada operacional sintética**, calibr
 7. Escrita em `parquet`.
 8. Visualização no dashboard.
 
+## Camadas de machine learning adicionadas
+
+### 1. Regressão para prever repasse futuro
+
+Objetivo:
+
+- prever o `valor_total_repassado` do ano mais recente disponível a partir de sinais históricos do próprio município.
+
+Modelo usado:
+
+- `RandomForestRegressor`
+
+Features:
+
+- `ano`
+- `lag_valor_1`
+- `lag_valor_2`
+- `lag_familias_1`
+- `lag_beneficio_1`
+- `lag_crescimento_1`
+
+Leitura:
+
+- como a base é anual e há ausência de `2022`, a tarefa de previsão é difícil e o `R²` deve ser lido como um benchmark exploratório, não como modelo final de produção.
+
+### 2. Clustering de municípios
+
+Objetivo:
+
+- agrupar municípios com perfis parecidos de repasse, benefício, famílias atendidas e comportamento operacional.
+
+Modelo usado:
+
+- `KMeans`
+
+Critério:
+
+- busca do melhor `k` entre `3` e `6` usando `silhouette score`
+
+Features:
+
+- `valor_total_repassado`
+- `familias_beneficiarias`
+- `beneficio_medio`
+- `crescimento_valor_pct`
+- `taxa_saque_media`
+- `gap_medio`
+
+### 3. Detecção de anomalias operacionais
+
+Objetivo:
+
+- identificar meses e municípios com comportamento atípico em `pagamento vs saque`.
+
+Modelo usado:
+
+- `IsolationForest`
+
+Features:
+
+- `valor_pago_estimado`
+- `valor_sacado_estimado`
+- `gap_pagamento_saque`
+- `taxa_saque_pct`
+- `familias_mes_estimadas`
+
 ## Resultados atuais
 
 - `102` municípios cobertos
 - `19` anos de histórico
 - `2.448` linhas operacionais sintéticas
 - taxa média estimada de saque acima de `90%`
+- `R² da regressão`: `0.1515`
+- `clusters selecionados`: `3`
+- `silhouette score`: `0.3158`
+- `anomalias operacionais`: `74`
 
 ## Como executar
 
@@ -105,7 +192,10 @@ This project reproduces a public-policy analytics workflow using `Python + PySpa
 - territorial trend analysis for Bolsa Família;
 - municipality-level comparison of transferred value, beneficiary families, and average benefit;
 - operational monitoring of estimated `payment vs withdrawal`;
-- identification of municipalities with higher operational gaps.
+- identification of municipalities with higher operational gaps;
+- future transfer prediction;
+- municipality clustering;
+- anomaly detection.
 
 ### Data source
 
@@ -117,6 +207,7 @@ The `payment vs withdrawal` layer is **synthetic but calibrated** from the publi
 
 - `PySpark`
 - `Pandas`
+- `scikit-learn`
 - `Streamlit`
 - `Plotly`
 
@@ -126,3 +217,7 @@ The `payment vs withdrawal` layer is **synthetic but calibrated** from the publi
 - `19` years of history
 - `2,448` synthetic operational rows
 - average estimated withdrawal rate above `90%`
+- regression `R²`: `0.1515`
+- selected clusters: `3`
+- silhouette score: `0.3158`
+- operational anomalies: `74`

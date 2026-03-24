@@ -1,0 +1,6 @@
+{
+  "algorithm": "isolation_forest",
+  "rows_analyzed": 2448,
+  "anomaly_rows": 74,
+  "anomaly_rate_pct": 3.02
+}

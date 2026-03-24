@@ -1,0 +1,34 @@
+{
+  "algorithm": "kmeans",
+  "clusters": 3,
+  "silhouette_score": 0.3158,
+  "cluster_profile": [
+    {
+      "cluster": 1,
+      "valor_total_repassado": 354046235.0,
+      "familias_beneficiarias": 109183.0,
+      "beneficio_medio": 3383.63,
+      "crescimento_valor_pct": 602.68,
+      "taxa_saque_media": 99.75,
+      "gap_medio": 40443.16
+    },
+    {
+      "cluster": 0,
+      "valor_total_repassado": 18396052.78,
+      "familias_beneficiarias": 5395.65,
+      "beneficio_medio": 3403.11,
+      "crescimento_valor_pct": 305.67,
+      "taxa_saque_media": 97.52,
+      "gap_medio": 22314.94
+    },
+    {
+      "cluster": 2,
+      "valor_total_repassado": 12710714.72,
+      "familias_beneficiarias": 3686.2,
+      "beneficio_medio": 3460.73,
+      "crescimento_valor_pct": 241.15,
+      "taxa_saque_media": 99.14,
+      "gap_medio": 4723.22
+    }
+  ]
+}

@@ -11,13 +11,17 @@ from pyspark.sql import SparkSession, Window
 from pyspark.sql import functions as F
 
 from .config import (
+    ANOMALY_METRICS_PATH,
     MUNICIPAL_TIMESERIES_PATH,
     OPERATIONAL_METRICS_PATH,
     PROCESSED_DIR,
     RAW_DATA_PATH,
+    REGRESSION_METRICS_PATH,
     SUMMARY_PATH,
     TERRITORIAL_METRICS_PATH,
+    CLUSTERING_METRICS_PATH,
 )
+from .ml_models import run_ml_models
 
 
 def create_spark_session(app_name: str = "bolsa-familia-territorial-panel") -> SparkSession:
@@ -140,6 +144,16 @@ def run_pipeline_pandas() -> dict[str, float]:
     operational_df = _build_operational_metrics_pandas(territorial_df)
     summary = _build_summary_pandas(territorial_df, operational_df)
     _save_outputs_pandas(territorial_df, operational_df, summary)
+    ml_metrics = run_ml_models()
+    summary.update(
+        {
+            "regression_r2": ml_metrics["regression"]["r2"],
+            "clusters": ml_metrics["clustering"]["clusters"],
+            "silhouette_score": ml_metrics["clustering"]["silhouette_score"],
+            "anomaly_rows": ml_metrics["anomaly_detection"]["anomaly_rows"],
+        }
+    )
+    SUMMARY_PATH.write_text(json.dumps(summary, indent=2, ensure_ascii=False))
     return summary
 
 
@@ -330,6 +344,16 @@ def run_pipeline() -> dict[str, float]:
         summary = build_summary(territorial_df, operational_df)
         summary["engine"] = "pyspark"
         save_outputs(territorial_df, operational_df, summary)
+        ml_metrics = run_ml_models()
+        summary.update(
+            {
+                "regression_r2": ml_metrics["regression"]["r2"],
+                "clusters": ml_metrics["clustering"]["clusters"],
+                "silhouette_score": ml_metrics["clustering"]["silhouette_score"],
+                "anomaly_rows": ml_metrics["anomaly_detection"]["anomaly_rows"],
+            }
+        )
+        SUMMARY_PATH.write_text(json.dumps(summary, indent=2, ensure_ascii=False))
         return summary
     finally:
         spark.stop()

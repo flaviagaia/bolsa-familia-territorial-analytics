@@ -6,7 +6,14 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from src.config import MUNICIPAL_TIMESERIES_PATH, OPERATIONAL_METRICS_PATH, SUMMARY_PATH, TERRITORIAL_METRICS_PATH
+from src.config import (
+    ANOMALY_OUTPUT_PATH,
+    CLUSTERING_OUTPUT_PATH,
+    OPERATIONAL_METRICS_PATH,
+    REGRESSION_OUTPUT_PATH,
+    SUMMARY_PATH,
+    TERRITORIAL_METRICS_PATH,
+)
 from src.pipeline import run_pipeline
 
 
@@ -27,26 +34,39 @@ st.markdown(
 
 @st.cache_data
 def load_data():
-    if not SUMMARY_PATH.exists():
+    required_paths = [
+        SUMMARY_PATH,
+        TERRITORIAL_METRICS_PATH,
+        OPERATIONAL_METRICS_PATH,
+        REGRESSION_OUTPUT_PATH,
+        CLUSTERING_OUTPUT_PATH,
+        ANOMALY_OUTPUT_PATH,
+    ]
+    if not all(path.exists() for path in required_paths):
         run_pipeline()
     territorial = pd.read_parquet(TERRITORIAL_METRICS_PATH)
     operational = pd.read_parquet(OPERATIONAL_METRICS_PATH)
+    regression = pd.read_parquet(REGRESSION_OUTPUT_PATH)
+    clusters = pd.read_parquet(CLUSTERING_OUTPUT_PATH)
+    anomalies = pd.read_parquet(ANOMALY_OUTPUT_PATH)
     summary = json.loads(SUMMARY_PATH.read_text())
-    return territorial, operational, summary
+    return territorial, operational, regression, clusters, anomalies, summary
 
 
-territorial_df, operational_df, summary = load_data()
+territorial_df, operational_df, regression_df, clusters_df, anomalies_df, summary = load_data()
 
 st.title("Painel de Evolução Territorial do Bolsa Família")
 st.caption(
     "Base pública de Alagoas para evolução territorial e camada operacional sintética calibrada para análise de pagamento vs saque."
 )
 
-metric_cols = st.columns(4)
+metric_cols = st.columns(6)
 metric_cols[0].metric("Municípios", summary["municipios_cobertos"])
 metric_cols[1].metric("Anos cobertos", summary["anos_cobertos"])
 metric_cols[2].metric("Linhas operacionais", summary["linhas_operacionais"])
 metric_cols[3].metric("Taxa média de saque", f"{summary['taxa_media_saque_pct']:.2f}%")
+metric_cols[4].metric("R² regressão", f"{summary['regression_r2']:.3f}")
+metric_cols[5].metric("Anomalias", summary["anomaly_rows"])
 
 year_options = sorted(territorial_df["ano"].unique().tolist())
 selected_year = st.selectbox("Ano de referência", year_options, index=len(year_options) - 1)
@@ -54,7 +74,9 @@ selected_year = st.selectbox("Ano de referência", year_options, index=len(year_
 selected_territorial = territorial_df[territorial_df["ano"] == selected_year].copy()
 selected_operational = operational_df[operational_df["ano"] == selected_year].copy()
 
-tab1, tab2, tab3 = st.tabs(["Evolução Territorial", "Pagamento vs Saque", "Municípios Críticos"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(
+    ["Evolução Territorial", "Pagamento vs Saque", "Clustering", "Previsão de Repasse", "Anomalias"]
+)
 
 with tab1:
     yearly_state = (
@@ -114,7 +136,6 @@ with tab2:
     fig_gap.update_layout(yaxis={"categoryorder": "total ascending"})
     st.plotly_chart(fig_gap, use_container_width=True)
 
-with tab3:
     risk_counts = (
         selected_operational.groupby("risco_operacional", as_index=False)["municipio"]
         .count()
@@ -128,14 +149,71 @@ with tab3:
     )
     st.plotly_chart(fig_risk, use_container_width=True)
 
-    critical = (
-        selected_operational.groupby("municipio", as_index=False)
+with tab3:
+    cluster_year = int(clusters_df["ano"].max())
+    cluster_counts = clusters_df.groupby("cluster", as_index=False)["municipio"].count().rename(columns={"municipio": "quantidade"})
+    fig_clusters = px.bar(
+        cluster_counts,
+        x="cluster",
+        y="quantidade",
+        title="Quantidade de municípios por cluster",
+        color="quantidade",
+    )
+    st.plotly_chart(fig_clusters, use_container_width=True)
+
+    scatter_clusters = px.scatter(
+        clusters_df,
+        x="familias_beneficiarias",
+        y="valor_total_repassado",
+        color=clusters_df["cluster"].astype(str),
+        hover_name="municipio",
+        title=f"Clusters municipais no ano mais recente disponível ({cluster_year})",
+        size="beneficio_medio",
+    )
+    st.plotly_chart(scatter_clusters, use_container_width=True)
+
+    cluster_profile = (
+        clusters_df.groupby("cluster", as_index=False)[
+            ["valor_total_repassado", "familias_beneficiarias", "beneficio_medio", "taxa_saque_media", "gap_medio"]
+        ]
+        .mean()
+        .round(2)
+    )
+    st.dataframe(cluster_profile, use_container_width=True, hide_index=True)
+
+with tab4:
+    top_errors = regression_df.nlargest(15, "absolute_error")[
+        ["municipio", "target_repassado", "predicted_repassado", "absolute_error"]
+    ]
+    fig_reg = px.scatter(
+        regression_df,
+        x="target_repassado",
+        y="predicted_repassado",
+        hover_name="municipio",
+        title="Valor real vs valor previsto do repasse municipal",
+    )
+    st.plotly_chart(fig_reg, use_container_width=True)
+    st.dataframe(top_errors, use_container_width=True, hide_index=True)
+
+with tab5:
+    selected_anomalies = anomalies_df[anomalies_df["ano"] == selected_year].copy()
+    anomaly_summary = (
+        selected_anomalies.groupby("municipio", as_index=False)
         .agg(
+            ocorrencias=("anomaly_flag", "count"),
+            gap_medio=("gap_pagamento_saque", "mean"),
             taxa_saque_media=("taxa_saque_pct", "mean"),
-            gap_total=("gap_pagamento_saque", "sum"),
         )
-        .sort_values(["taxa_saque_media", "gap_total"], ascending=[True, False])
+        .sort_values(["ocorrencias", "gap_medio"], ascending=[False, False])
         .head(20)
     )
-    st.dataframe(critical, use_container_width=True, hide_index=True)
-
+    fig_anomaly = px.scatter(
+        selected_anomalies,
+        x="valor_pago_estimado",
+        y="valor_sacado_estimado",
+        color="risco_operacional",
+        hover_name="municipio",
+        title=f"Pontos anômalos identificados pelo Isolation Forest em {selected_year}",
+    )
+    st.plotly_chart(fig_anomaly, use_container_width=True)
+    st.dataframe(anomaly_summary, use_container_width=True, hide_index=True)

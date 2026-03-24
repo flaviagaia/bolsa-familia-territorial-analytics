@@ -1,0 +1,7 @@
+{
+  "model": "random_forest_regressor",
+  "test_year": 2023,
+  "r2": 0.1515,
+  "mae": 14243351.08,
+  "rows_tested": 102
+}

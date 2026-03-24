@@ -6,5 +6,9 @@
   "maior_repassse_ano_recente": 354046235.0,
   "linhas_operacionais": 2448,
   "taxa_media_saque_pct": 98.56,
-  "engine": "pandas_fallback"
+  "engine": "pandas_fallback",
+  "regression_r2": 0.1515,
+  "clusters": 3,
+  "silhouette_score": 0.3158,
+  "anomaly_rows": 74
 }

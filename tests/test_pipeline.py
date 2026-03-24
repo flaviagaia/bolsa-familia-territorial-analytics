@@ -19,6 +19,9 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(summary["anos_cobertos"], 19)
         self.assertEqual(summary["linhas_operacionais"], 2448)
         self.assertGreater(summary["taxa_media_saque_pct"], 90)
+        self.assertIn("regression_r2", summary)
+        self.assertIn("clusters", summary)
+        self.assertIn("anomaly_rows", summary)
 
 
 if __name__ == "__main__":
