@@ -3,7 +3,7 @@
   "municipios_cobertos": 102,
   "ano_mais_recente": 2023,
   "maior_municipio_ano_recente": "Maceió",
-  "maior_repassse_ano_recente": 354046235.0,
+  "maior_repasse_ano_recente": 354046235.0,
   "linhas_operacionais": 2448,
   "taxa_media_saque_pct": 98.56,
   "engine": "pandas_fallback",

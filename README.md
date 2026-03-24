@@ -36,7 +36,7 @@ Base pública utilizada:
 
 Arquivo usado:
 
-- [al_bolsa_familia_municipios.csv](/Users/flaviagaia/Documents/CV_FLAVIA_CODEX/evolucao-territorial-do-bolsa-familia/data/raw/al_bolsa_familia_municipios.csv)
+- [al_bolsa_familia_municipios.csv](data/raw/al_bolsa_familia_municipios.csv)
 
 Cobertura:
 

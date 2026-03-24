@@ -112,7 +112,7 @@ def _build_summary_pandas(territorial_df: pd.DataFrame, operational_df: pd.DataF
         "municipios_cobertos": int(territorial_df["codigo_municipio"].nunique()),
         "ano_mais_recente": latest_year,
         "maior_municipio_ano_recente": str(top_city["municipio"]),
-        "maior_repassse_ano_recente": float(top_city["valor_total_repassado"]),
+        "maior_repasse_ano_recente": float(top_city["valor_total_repassado"]),
         "linhas_operacionais": int(len(operational_df)),
         "taxa_media_saque_pct": float(round(operational_df["taxa_saque_pct"].mean(), 2)),
         "engine": "pandas_fallback",
@@ -293,7 +293,7 @@ def build_summary(territorial_df, operational_df) -> dict[str, float]:
         "municipios_cobertos": int(territorial_df.select("codigo_municipio").distinct().count()),
         "ano_mais_recente": int(latest_year),
         "maior_municipio_ano_recente": top_city["municipio"],
-        "maior_repassse_ano_recente": float(top_city["valor_total_repassado"]),
+        "maior_repasse_ano_recente": float(top_city["valor_total_repassado"]),
         "linhas_operacionais": int(operational_df.count()),
         "taxa_media_saque_pct": float(
             operational_df.agg(F.round(F.avg("taxa_saque_pct"), 2).alias("media")).collect()[0]["media"]
