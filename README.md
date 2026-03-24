@@ -267,6 +267,12 @@ Features:
 - O clustering é útil para separar perfis de municípios e apoiar segmentação territorial.
 - A detecção de anomalias é útil para priorizar investigação operacional, especialmente quando não existe uma base rotulada de problemas.
 
+## Dashboard
+
+Visão da interface em `Streamlit` usada para explorar a evolução territorial, os indicadores operacionais e as camadas de machine learning do projeto:
+
+![Dashboard do projeto](assets/streamlit_dashboard.png)
+
 ## Como executar
 
 ```bash
@@ -307,6 +313,12 @@ This project reproduces a public-policy analytics workflow using `Python + PySpa
 - future transfer prediction;
 - municipality clustering;
 - anomaly detection.
+
+### Dashboard
+
+Streamlit interface used to explore territorial trends, operational indicators, and the machine learning layers of the project:
+
+![Project dashboard](assets/streamlit_dashboard.png)
 
 ### Data source
 
